@@ -1,0 +1,95 @@
+---
+author: "Marc Gumowski"
+categories:
+- JavaScript
+- R language
+d3: yes
+layout: World Map
+output: html_document
+css: src/styles.css
+tags:
+- D3
+- World Map
+---
+
+```{r setup, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Install packages
+list.of.packages <- c("readxl", "RODBC", "magrittr", "plyr", "zoo", "data.table", "extrafont", "maps", "ggplot2", 
+                      "ggrepel", "RColorBrewer", "viridis", "dplyr", "sp", "circlize", "gridSVG", "ggiraph",
+                      "htmlwidgets", "shiny", "knitr", "xtable", "jsonlite")
+new.packages     <- list.of.packages[!(list.of.packages %in% installed.packages()[ ,"Package"])]
+if(length(new.packages)) {
+  install.packages(new.packages)
+}
+
+# Load packages
+invisible(lapply(list.of.packages, library, character.only = TRUE))
+# invisible(extrafont::loadfonts(device="win"))
+
+# Load data
+dbcoord  <- fromJSON("src/world-110m.geojson")
+dbplot   <- data.table(read_xlsx("data.xlsx"))
+europeID <- data.table(read_xlsx("europeId.xlsx"))
+
+# Map corrections :
+# Add Taiwan correct ISO, position n°163
+dbcoord$features$id[163] <- "CHT"
+# Add Romania correct ISO, position n°134
+dbcoord$features$id[134] <- "ROM"
+# Remove Antarctica, position n°7
+dbcoord$features <- dbcoord$features[-7, ]
+
+# Country colors
+countryBins   <- c(0, 2, 4, 6, 8, 10, 15, 20, Inf)
+countryPal    <- brewer.pal(8, "Greens")
+countryNA     <- "#dee0de"
+europeID      <- cbind(europeID, color = unique(cut(dbplot[iso == "EU", tariffs], 
+                                                    breaks = countryBins, labels = countryPal, right = F)))
+dbplot$color  <- cut(dbplot$tariffs, breaks = countryBins, labels = countryPal, right = F)
+countryColors <- merge(data.table(id = dbcoord$features$id), 
+                                rbind(unique(dbplot[ ,list(id = iso, color)]), europeID), sort = F, all.x = T)
+levels(countryColors$color) <- c(levels(countryColors$color), countryNA) 
+countryColors$color[is.na(countryColors$color)] <- countryNA
+
+# Add ISO-3A and color to coord properties
+dbcoord$features$properties <- cbind(dbcoord$features$properties, 
+                                     iso = dbcoord$features$id,
+                                     color = countryColors$color,
+                                     stringsAsFactors = FALSE)
+# Merge value and coordinates
+dbcoord$features$properties <- merge(data.table(dbcoord$features$properties), dbplot, all.x = T, sort = F)
+# Center EU in Germany
+dbcoord$features$properties$value[dbcoord$features$properties$name == "Germany"] <- dbplot[iso == "EU", value]
+dbcoord$features$properties$iso[dbcoord$features$properties$name == "Germany"]   <- dbplot[iso == "EU", iso]
+dbcoord$features$properties$tariffs[dbcoord$features$properties$name == "Germany"]   <- dbplot[iso == "EU", tariffs]
+dbcoord$features$properties$binding[dbcoord$features$properties$name == "Germany"]   <- dbplot[iso == "EU", binding]
+dbcoord$features$properties$bound[dbcoord$features$properties$name == "Germany"]   <- dbplot[iso == "EU", bound]
+dbcoord$features$properties$name[dbcoord$features$properties$name == "Germany"]  <- "European Union"
+# Replace NA value by 0
+dbcoord$features$properties[is.na(value), 'value'] <- 0
+dbcoord$features$properties[is.na(tariffs), 'tariffs'] <- 0
+dbcoord$features$properties[is.na(binding), 'binding'] <- "n/a "
+dbcoord$features$properties[is.na(bound), 'bound'] <- "n/a "
+```
+
+<head><title> World Map </title></head>
+<body>
+<center><h1>Amount of Imports from WTP16 Countries</h1></center>
+<div id="worldMapInteractive" style="text-align:center; width:100%;"></div>
+```{r echo = FALSE, results = 'asis'}
+# Data, d3, Chart
+cat(
+  paste(
+    '<script>
+    var world = ', toJSON(dbcoord), ';
+  </script>'
+  , sep=""),
+'<script src="src/d3v4/d3.min.js"></script>
+<script src="src/worldMapInteractive.js"></script>
+# ')
+
+
+```
+<p> Note : year 2014 or closest available year with data. </p>
+</body></html>

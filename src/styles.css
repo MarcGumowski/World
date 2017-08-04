@@ -1,0 +1,60 @@
+h1 {
+   color: #666666;
+   font-family: calibri;
+}
+
+p {
+   color: #666666;
+   font-family: calibri;
+}
+
+.tooltip {   
+  position: absolute;           
+  text-align: left;
+  margin:0;
+  padding: 10px 10px;  
+  font: 12px sans-serif;   
+  font-family: calibri;     
+  background: rgba(218,218,218,0.75);   
+  pointer-events: none; 
+  -webkit-box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.4);
+	-moz-box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.4);
+	box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.4);
+}
+
+.legendMap circle {
+  fill: none;
+  stroke: #ccc;
+}
+
+.legendMap text {
+   fill: #666666;
+   font-family: calibri;
+   font: 10px sans-serif;
+   text-anchor: middle;
+}
+
+.country {
+  stroke: #b3cde3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.bubble {
+  fill: brown;
+  opacity:0.5;
+  stroke: #b3cde3;
+  stroke-width: 0.5px;
+}
+
+.bubble:hover {
+  fill: yellow !important;
+  stroke: #b3cde3 !important;
+  stroke-width: 0.5px !important;
+  opacity:0.5 !important;
+}
+
+.background {
+  fill: none;
+  pointer-events: all;
+}
